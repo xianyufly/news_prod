@@ -11,6 +11,7 @@ import random
 import gzip
 import io
 from thirdFileUtil import imgReg
+from thirdFileUtil import ipPool
 
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 #HTML解析库
@@ -43,7 +44,7 @@ pymysql.install_as_MySQLdb()
  解析搜狗文章地址
 [description]
 '''
-def parserUrlHtml(url) :
+def parserUrlHtml(driver,url) :
 	# 新开一个窗口，通过执行js来新开一个窗口
 	js='window.open(\"'+url+'\");'
 	driver.execute_script(js)
@@ -63,6 +64,30 @@ def parserUrlHtml(url) :
 		driver.close() #关闭当前窗口
 		driver.switch_to_window(main_handle) #切换回主页面
 	return content
+'''[summary]
+代理请求
+[description]
+'''
+
+def proxyRequest(url,header):
+	targeturl="http://weixin.sogou.com"
+	flag = True
+	while flag:
+		try :
+			flag=False
+			proxy_addr=ipPool.randomGetIp(targeturl)
+			proxy = urllib.request.ProxyHandler({'http': proxy_addr,'https': proxy_addr})
+			opener = urllib.request.build_opener(proxy, urllib.request.ProxyHandler)
+			urllib.request.install_opener(opener)
+			req = urllib.request.Request(url, None, headers=header)
+			response = urllib.request.urlopen(req)
+			html=response.read().decode('UTF-8')
+		except urllib.error.URLError as err:
+			print(err)
+			flag=True
+	return html
+	
+	
 
 def task():
 	global _env
@@ -102,9 +127,16 @@ def task():
 				'Referer': 'http://weixin.sogou.com/',
 				'Accept-Language': 'zh-CN,zh;q=0.8,ja;q=0.6'
 			}
-			req = urllib.request.Request(url, None, headers=header)
-			response = urllib.request.urlopen(req)
-			html=response.read().decode('UTF-8')
+			# targeturl="http://weixin.sogou.com"
+			# proxy_addr=ipPool.randomGetIp(targeturl)
+			# proxy_addr="218.60.8.99:9999"
+			# proxy = urllib.request.ProxyHandler({'http': proxy_addr,'https': proxy_addr})
+			# opener = urllib.request.build_opener(proxy, urllib.request.ProxyHandler)
+			# urllib.request.install_opener(opener)
+			# req = urllib.request.Request(url, None, headers=header)
+			# response = urllib.request.urlopen(req)
+			# html=response.read().decode('UTF-8')
+			html=proxyRequest(url,header)
 			htmlDom = etree.HTML(html)
 			news_li_array=htmlDom.xpath("//li")
 			for item in news_li_array :
@@ -141,10 +173,10 @@ def task():
 						pubDate=dom[0]
 					# print("标题:%s\n简介:%s\n文章地址:%s\n缩略图:%s\n发布时间:%s\n文章来源:%s"%(title,memo,articleUrl,smallPic,pubDate,source))
 					num=session.query(TArticle).filter(TArticle.title==title).count()
+					print(title)
 					if num == 0 :
 						#articleUrl="https://mp.weixin.qq.com/s?src=11&timestamp=1532503813&ver=1019&signature=V1NWQ1eZLCxrJsM5qn7bdRbJ04Fm2r6-7W0NS7fmzlj6OFYSpocMXnfQ*RB0*YT6*JzSXV9r5ZeHgVRP6Nlgh4l885LtMOjsBvqulay6sF0aMAdTeCyxKXRYXYYeoTtH&new=1"
-						print(title)
-						content=parserUrlHtml(articleUrl);
+						content=parserUrlHtml(driver,articleUrl);
 						if content!="" :
 							dir_name, dir_key, p_dir_key,account_str=imgReg.initEnv(subject)
 							content=imgReg.regReplaceImgSrc(content)
@@ -160,11 +192,13 @@ def task():
 							# break;
 					print("=====================================分割线==================================")
 				except Exception as err:
-					print("出错了")
 					print(err)
-			break;
-		break;	
+					# break;
+			# break;
+		# break;	
 	session.close();		
 	driver.quit()	
 
 
+if __name__ == '__main__':
+    task()

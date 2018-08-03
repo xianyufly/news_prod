@@ -29,6 +29,7 @@ sys.path.append("..")
 from models.WyCookie import WyCookie
 from models.WyQq import WyQq
 from models.TArticle import TArticle
+from thirdFileUtil import ipPool
 import env
 #系统变量
 _env=env.initEnv()
@@ -98,6 +99,47 @@ def getCookieByParam(cookieData, key, domain=""):
             val = item["value"]
     return val
 
+'''
+代理请求--普通post请求
+'''
+def proxyRquest_normal(url,data,headers):
+    targeturl = "https://www.weiyun.com"
+    flag = True
+    while flag:
+        try :
+            proxy_addr=ipPool.randomGetIp(targeturl)
+            proxies = {
+              "http": "http://"+proxy_addr,
+              "https": "http://"+proxy_addr,
+            }
+            flag=False
+            result = requests.request('POST' , url, proxies = proxies, data=json.dumps(
+                data), headers=headers, verify=False)
+        except requests.exceptions.ProxyError as err:
+            flag=True
+    return result
+
+'''
+代理请求--文件上传post请求
+'''
+def proxyRquest_file(url,data,files,headers):
+    targeturl = "https://www.weiyun.com"
+    flag = True
+    while flag:
+        try :
+            proxy_addr=ipPool.randomGetIp(targeturl)
+            proxies = {
+              "http": "http://"+proxy_addr,
+              "https": "http://"+proxy_addr,
+            }
+            flag=False
+            result = requests.request('POST', url, proxies = proxies, data=data,
+                              files=files, headers=headers, verify=False)
+        except requests.exceptions.ProxyError as err:
+            flag=True
+    return result
+
+    
 
 '''
 微云--初始化
@@ -114,11 +156,11 @@ def init():
     #
     session = DB_Session()
     tid = session.query(func.max(TArticle.tid)).first()
-    mod = session.query(WyQq).all()
+    mod = session.query(WyQq).filter(WyQq.is_can_upload ==0).all()
     offset =0
     if(tid[0]!=None):
         offset=tid[0]%len(mod)
-    qq=session.query(WyQq).order_by(WyQq.tid.asc()).limit(1).offset(offset).first()
+    qq=session.query(WyQq).filter(WyQq.is_can_upload ==0).order_by(WyQq.tid.asc()).limit(1).offset(offset).first()
 
     account_str=qq.account_str
     pwd_str=qq.pwd_str
@@ -264,8 +306,15 @@ def wy_safeBox():
         "req_body": json.dumps(req_body)
     }
     url = "https://www.weiyun.com/webapp/json/weiyunSafeBox/SafeBoxCheckStatus?refer=chrome_windows&g_tk="+wyctoken+"&r="+str(random.random())
-    result = requests.request('POST', url, data=json.dumps(
-        data), headers=headers, verify=False)
+    # targeturl = "https://www.weiyun.com"
+    # proxy_addr=ipPool.randomGetIp(targeturl)
+    # proxies = {
+    #   "http": "http://"+proxy_addr,
+    #   "https": "http://"+proxy_addr,
+    # }
+    # result = requests.request('POST' , url, proxies = proxies, data=json.dumps(
+    #     data), headers=headers, verify=False)
+    result = proxyRquest_normal(url,data,headers)
     flag =True
     try :
         successBean = result.json()
@@ -337,8 +386,15 @@ def wy_diskDirCreate(pdir_key, ppdir_key, dir_name):
         "req_body": json.dumps(req_body)
     }
     url = "https://www.weiyun.com/webapp/json/weiyunQdiskClient/DiskDirCreate?refer=chrome_windows&g_tk="+wyctoken+"&r="+str(random.random())
-    result = requests.request('POST', url, data=json.dumps(
-        data), headers=headers, verify=False)
+    # targeturl = "https://www.weiyun.com"
+    # proxy_addr=ipPool.randomGetIp(targeturl)
+    # proxies = {
+    #   "http": "http://"+proxy_addr,
+    #   "https": "http://"+proxy_addr,
+    # }
+    # result = requests.request('POST', url, proxies = proxies, data=json.dumps(
+    #     data), headers=headers, verify=False)
+    result = proxyRquest_normal(url,data,headers)
     successBean = result.json()
     pdir_key = ""
     dir_key = ""
@@ -435,8 +491,15 @@ def wy_fileUpload_small(pdir_key, ppdir_key, localFilePath):
     jsonData = {
         "json": json.dumps(data)
     }
-    result = requests.request('POST', url, data=jsonData,
-                              files=files, headers=headers, verify=False)
+    # targeturl = "https://www.weiyun.com"
+    # proxy_addr=ipPool.randomGetIp(targeturl)
+    # proxies = {
+    #   "http": "http://"+proxy_addr,
+    #   "https": "http://"+proxy_addr,
+    # }
+    # result = requests.request('POST', url, proxies = proxies, data=jsonData,
+    #                           files=files, headers=headers, verify=False)
+    result = proxyRquest_file(url,jsonData,files,headers)
     successBean = result.json()
     # print(successBean)
     file_id = ""
@@ -505,7 +568,15 @@ def readFileBlob(localFilePath,block_info_list,upload_key,channel,ex,pdir_key):
             "json": json.dumps(data)
         }
         url = "https://upload.weiyun.com/ftnup_v2/weiyun?cmd=247121"
-        result = requests.request('POST', url,data=jsonData, files=files, headers=headers, verify=False)
+        # targeturl = "https://www.weiyun.com"
+        # proxy_addr=ipPool.randomGetIp(targeturl)
+        # proxies = {
+        #   "http": "http://"+proxy_addr,
+        #   "https": "http://"+proxy_addr,
+        # }
+        # #proxies = proxies
+        # result = requests.request('POST', url, proxies = proxies,data=jsonData, files=files, headers=headers, verify=False)
+        result = proxyRquest_file(url,jsonData,files,headers)
         successBean = result.json()
     flie.close()
 '''[summary]
@@ -585,7 +656,15 @@ def wy_fileUpload_big(pdir_key, ppdir_key, localFilePath):
     jsonData = {
         "json": json.dumps(data)
     }
-    result = requests.request('POST', url, files=jsonData, headers=headers, verify=False)
+    # targeturl = "https://www.weiyun.com"
+    # proxy_addr=ipPool.randomGetIp(targeturl)
+    # proxies = {
+    #   "http": "http://"+proxy_addr,
+    #   "https": "http://"+proxy_addr,
+    # }
+    # #,proxies = proxies
+    # result = requests.request('POST', url,proxies = proxies, files=jsonData, headers=headers, verify=False)
+    result = proxyRquest_file(url,None,jsonData,headers)
     successBean = result.json()
     file_exist=successBean["rsp_body"]["RspMsg_body"]["weiyun.PreUploadMsgRsp_body"]['file_exist']
     if(file_exist!=True) :
@@ -669,8 +748,16 @@ def wy_diskFileBatchDeleteEx(pdir_key, ppdir_key, file_id, filename):
         "req_body": json.dumps(req_body)
     }
     url = "https://www.weiyun.com/webapp/json/weiyunQdiskClient/DiskDirFileBatchDeleteEx?refer=chrome_windows&g_tk="+wyctoken+"&r="+str(random.random())
-    result = requests.request('POST', url, data=json.dumps(
-        data), headers=headers, verify=False)
+    # targeturl = "https://www.weiyun.com"
+    # proxy_addr=ipPool.randomGetIp(targeturl)
+    # proxies = {
+    #   "http": "http://"+proxy_addr,
+    #   "https": "http://"+proxy_addr,
+    # }
+    # #,proxies = proxies
+    # result = requests.request('POST', url,proxies = proxies, data=json.dumps(
+    #     data), headers=headers, verify=False)
+    result = proxyRquest_normal(url,data,headers)
 
 
 '''[summary]
@@ -736,8 +823,16 @@ def wy_diskDirBatchDeleteEx(pdir_key, ppdir_key, dir_key, dir_name):
         "req_body": json.dumps(req_body)
     }
     url = "https://www.weiyun.com/webapp/json/weiyunQdiskClient/DiskDirFileBatchDeleteEx?refer=chrome_windows&g_tk="+wyctoken+"&r="+str(random.random())
-    result = requests.request('POST', url, data=json.dumps(
-        data), headers=headers, verify=False)
+    # targeturl = "https://www.weiyun.com"
+    # proxy_addr=ipPool.randomGetIp(targeturl)
+    # proxies = {
+    #   "http": "http://"+proxy_addr,
+    #   "https": "http://"+proxy_addr,
+    # }
+    # #,proxies = proxies
+    # result = requests.request('POST', url,proxies = proxies, data=json.dumps(
+    #     data), headers=headers, verify=False)
+    result = proxyRquest_normal(url,data,headers)
 
 
 '''[summary]
@@ -805,8 +900,16 @@ def wy_shareUrl(pdir_key, file_id, file_name):
         "req_body": json.dumps(req_body)
     }
     url = "https://www.weiyun.com/webapp/json/weiyunShare/WeiyunShareAddV2?refer=chrome_windows&g_tk="+wyctoken+"&r="+str(random.random())
-    result = requests.request('POST', url, data=json.dumps(
-        data), headers=headers, verify=False)
+    # targeturl = "https://www.weiyun.com"
+    # proxy_addr=ipPool.randomGetIp(targeturl)
+    # proxies = {
+    #   "http": "http://"+proxy_addr,
+    #   "https": "http://"+proxy_addr,
+    # }
+    # #,proxies = proxies
+    # result = requests.request('POST', url,proxies = proxies, data=json.dumps(
+    #     data), headers=headers, verify=False)
+    result = proxyRquest_normal(url,data,headers)
     successBean = result.json()
     if successBean["data"]["rsp_header"]["retcode"] == 0:
         short_url = successBean["data"]["rsp_body"]["RspMsg_body"]["short_url"]
@@ -867,8 +970,16 @@ def wy_downloadUrl(file_list):
         "req_body": json.dumps(req_body)
     }
     url = "https://www.weiyun.com/webapp/json/weiyunQdiskClient/DiskFileBatchDownload?refer=chrome_windows&g_tk="+wyctoken+"&r="+str(random.random())
-    result = requests.request('POST', url, data=json.dumps(
-        data), headers=headers, verify=False)
+    # targeturl = "https://www.weiyun.com"
+    # proxy_addr=ipPool.randomGetIp(targeturl)
+    # proxies = {
+    #   "http": "http://"+proxy_addr,
+    #   "https": "http://"+proxy_addr,
+    # }
+    # #,proxies = proxies
+    # result = requests.request('POST', url,proxies = proxies, data=json.dumps(
+    #     data), headers=headers, verify=False)
+    result = proxyRquest_normal(url,data,headers)
     successBean = result.json()
     if successBean["data"]["rsp_header"]["retcode"] == 0:
         download_url = []
@@ -928,44 +1039,43 @@ def wy_filePath(share_url, type):
         print(err)
         quitWebDriver()
 
-
-# try:
-#     #创建文件夹
-#     init()
-#     # rootDirKey, mainDirKey = getRootAndMainDirKey()
-#     # print("rootDirKey:%s,mainDirKey:%s"%(rootDirKey, mainDirKey))
-#     # dir_key,pdir_key=wy_diskDirCreate(mainDirKey,rootDirKey,"A_文件夹")
-#     # print("创建文件夹dir_key:%s,pdir_key:%s"%(dir_key,pdir_key))
-#     # #上传本地文件
-#     # localFilePath="C:\\Users\\Administrator\\Desktop\\python_news\\news_prod\\temp\\1532943777\\img_1532943777.gif"
-#     # file_id,filename=wy_fileUpload(dir_key,pdir_key,localFilePath)
-#     # # 删除微云文件
-#     # wy_diskFileBatchDeleteEx(dir_key,pdir_key,'fc85ad18-f96f-42c6-8eab-81f36fb16864','1.mp4')
-#     # # 删除微云文件夹
-#     # wy_diskDirBatchDeleteEx(mainDirKey,rootDirKey,'a909c646d29d98e531174278ac14597e','A_测试')
-#     # file_list=[
-#     #     {
-#     #         "pdir_key": "a909c646985f636b296e5d07ca7c749c",
-#     #         "file_id": "5851dbcf-7dea-4ef5-9a45-dca73090767f"
-#     #     },
-#     #     {
-#     #         "pdir_key": "a909c646985f636b296e5d07ca7c749c",
-#     #         "file_id": "5851dbcf-7dea-4ef5-9a45-dca73090767f"
-#     #     }
-#     # ]
-#     # download_url=wy_downloadUrl(file_list)
-#     # print("下载地址:",download_url)
-#     # share_url=wy_shareUrl(dir_key,
-#     #             file_id, filename)
-#     # print("分享地址:",share_url)
-#     # aim_url=wy_filePath(share_url,"video")
-#     # print(aim_url)
-#     # initWebDriver()
-#     # img_url=wy_filePath(share_url,"img")
-#     # print(img_url)
-# except Exception as err:
-#     print(err)
-#     print("fail")
-# finally:
-#     print("关闭浏览器")
-    # driver.quit()
+if __name__ == '__main__':
+    try:
+        #创建文件夹
+        init()
+        rootDirKey, mainDirKey = getRootAndMainDirKey()
+        print("rootDirKey:%s,mainDirKey:%s"%(rootDirKey, mainDirKey))
+        dir_key,pdir_key=wy_diskDirCreate(mainDirKey,rootDirKey,"A_文件夹")
+        print("创建文件夹dir_key:%s,pdir_key:%s"%(dir_key,pdir_key))
+        #上传本地文件
+        localFilePath="C:\\Users\\Administrator\\Desktop\\tt\\1.jpg"
+        file_id,filename=wy_fileUpload(dir_key,pdir_key,localFilePath)
+        # # 删除微云文件
+        # wy_diskFileBatchDeleteEx(dir_key,pdir_key,'fc85ad18-f96f-42c6-8eab-81f36fb16864','1.mp4')
+        # # 删除微云文件夹
+        # wy_diskDirBatchDeleteEx(mainDirKey,rootDirKey,'a909c646d29d98e531174278ac14597e','A_测试')
+        # file_list=[
+        #     {
+        #         "pdir_key": "a909c646985f636b296e5d07ca7c749c",
+        #         "file_id": "5851dbcf-7dea-4ef5-9a45-dca73090767f"
+        #     },
+        #     {
+        #         "pdir_key": "a909c646985f636b296e5d07ca7c749c",
+        #         "file_id": "5851dbcf-7dea-4ef5-9a45-dca73090767f"
+        #     }
+        # ]
+        # download_url=wy_downloadUrl(file_list)
+        # print("下载地址:",download_url)
+        # share_url=wy_shareUrl(dir_key,
+        #             file_id, filename)
+        # print("分享地址:",share_url)
+        # aim_url=wy_filePath(share_url,"video")
+        # print(aim_url)
+        # initWebDriver()
+        # img_url=wy_filePath(share_url,"img")
+        # print(img_url)
+    except Exception as err:
+        print(err)
+    finally:
+        print("关闭浏览器")
+        # driver.quit()
