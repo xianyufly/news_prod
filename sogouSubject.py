@@ -190,13 +190,11 @@ def task():
 						aricle=TArticle(dir_name=dir_name,dir_key=dir_key,p_dir_key=p_dir_key,art_type=subject,title=title,memo=memo,content=content,source_url=articleUrl,small_pic=smallPic,source=source,pub_date=datetime.datetime.utcfromtimestamp(int(pubDate)),qq=account_str)
 						session.add(aricle)
 						session.commit()
-						# break;
 				print("=====================================分割线==================================")
 			except Exception as err:
 				print(err)
-				# break;
-			# break;
-		# break;	
+				break;
+		break;	
 	session.close();		
 	driver.quit()	
 

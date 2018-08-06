@@ -28,6 +28,7 @@ from models.WyQq import WyQq
 import getopt
 import sys
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
+from thirdFileUtil import ipPool
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
@@ -113,6 +114,31 @@ def getCookieByParam(cookieData, key, domain=""):
         elif domain != "" and item["name"] == key and item["domain"] == domain:
             val = item["value"]
     return val
+
+proxy_addr = None
+
+'''
+代理请求--普通post请求
+'''
+def proxyRquest_normal(url,data,headers):
+    global proxy_addr
+    targeturl = "https://www.weiyun.com"
+    flag = True
+    while flag:
+        try :
+            if proxy_addr == None :
+                proxy_addr=ipPool.randomGetIp(targeturl)
+            proxies = {
+              "http": "http://"+proxy_addr,
+              "https": "http://"+proxy_addr,
+            }
+            flag=False
+            result = requests.request('POST' , url, proxies = proxies, data=json.dumps(
+                data), headers=headers, verify=False,timeout = 5)
+        except requests.exceptions.ProxyError as err:
+            proxy_addr=None
+            flag=True
+    return result
 
 
 '''
@@ -277,8 +303,9 @@ def wy_safeBox():
         "req_body": json.dumps(req_body)
     }
     url = "https://www.weiyun.com/webapp/json/weiyunSafeBox/SafeBoxCheckStatus?refer=chrome_windows&g_tk="+wyctoken+"&r="+str(random.random())
-    result = requests.request('POST', url, data=json.dumps(
-        data), headers=headers, verify=False)
+    # result = requests.request('POST', url, data=json.dumps(
+    #     data), headers=headers, verify=False)
+    result = proxyRquest_normal(url,data,headers)
     flag =True
     try :
         successBean = result.json()
@@ -342,8 +369,9 @@ def wy_downloadUrl(file_list):
         "req_body": json.dumps(req_body)
     }
     url = "https://www.weiyun.com/webapp/json/weiyunQdiskClient/DiskFileBatchDownload?refer=chrome_windows&g_tk="+wyctoken+"&r="+str(random.random())
-    result = requests.request('POST', url, data=json.dumps(
-        data), headers=headers, verify=False)
+    # result = requests.request('POST', url, data=json.dumps(
+    #     data), headers=headers, verify=False)
+    result = proxyRquest_normal(url,data,headers)
     successBean = result.json()
     if successBean["data"]["rsp_header"]["retcode"] == 0:
         download_url = []

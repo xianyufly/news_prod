@@ -83,7 +83,10 @@ def switchSrc(matched):
 	# endTime = time.time()
 	# print("生成分享地址时间:%s"%(str(endTime-begTime)))
 	# begTime = time.time()
-	aim_url=weiyun.wy_filePath(share_url,"img")
+	if share_url != "" :
+		aim_url=weiyun.wy_filePath(share_url,"img")
+	else :
+		aim_url="https://www.17sobt.com?error=100"
 	aim_url=aim_url+"&pdir_key="+dir_key+"&file_id="+file_id+"&account_str="+account_str
 	# endTime = time.time()
 	# print("生成最终地址时间:%s"%(str(endTime-begTime)))
@@ -124,7 +127,11 @@ def uploadImgByUrl(imgUrl,dir_name, dir_key, p_dir_key):
 	# endTime = time.time()
 	# print("生成分享地址时间:%s"%(str(endTime-begTime)))
 	# begTime = time.time()
-	aim_url=weiyun.wy_filePath(share_url,"img")
+	print("封面地址:"+share_url)
+	if share_url != "" :
+		aim_url=weiyun.wy_filePath(share_url,"img")
+	else :
+		aim_url= ""
 	# endTime = time.time()
 	# print("生成最终地址时间:%s"%(str(endTime-begTime)))
 	shutil.rmtree(aimfolder)

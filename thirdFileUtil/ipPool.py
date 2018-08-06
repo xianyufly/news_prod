@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import requests,threading,datetime
+import requests,threading,datetime,time
 from bs4 import BeautifulSoup
 import random
 #数据库操作库
@@ -85,7 +85,7 @@ def checkip(targeturl,ip):
     headers =getheaders()  # 定制请求头
     proxies = {"http": "http://"+ip, "https": "http://"+ip}  # 代理ip
     try:
-        response=requests.get(url=targeturl,proxies=proxies,headers=headers,timeout=5).status_code
+        response=requests.get(url=targeturl,proxies=proxies,headers=headers,timeout=1).status_code
         if response == 200 :
             return True
         else:
@@ -93,23 +93,30 @@ def checkip(targeturl,ip):
     except:
         return False
 # -----------------------------------------------------从数据中获取可用ip----------------------------------------------------
+session1=DB_Session()
+thread=None
 def randomGetIp(targeturl):
-    session=DB_Session()
+    global session1,thread
     ip_port=""
     flag=False
     while flag==False:
-        count=session.query(TIpPool).count()
-        ipPool=session.query(TIpPool).order_by(func.random()).limit(1).first()
+        count=session1.query(TIpPool).count()
         if count<10 :
-            t=threading.Thread(target=getip,args=(targeturl,'ip.txt'))
-            t.start()
+            if thread==None :
+                thread=threading.Thread(target=getip,args=(targeturl,'ip.txt'))
+                thread.start()
+        while count==0 :
+         session1.execute('reset query cache')
+         count=session1.query(TIpPool).count()
+         time.sleep(1)
+         print("数量:"+str(count))
+        ipPool=session1.query(TIpPool).order_by(func.random()).limit(1).first()
         ip_port=ipPool.ip+":"+ipPool.port
         flag=checkip(targeturl,ip_port)
-        print("ip_port:%s,验证结果:%s"%(ip_port,flag))
+        # print("ip_port:%s,验证结果:%s"%(ip_port,flag))
         if flag==False:
-            session.delete(ipPool)
-            session.commit()
-    session.close()
+            session1.delete(ipPool)
+            session1.commit()
     return ip_port
 #-------------------------------------------------------获取代理方法----------------------------------------------------
 # 免费代理 XiciDaili
@@ -139,7 +146,7 @@ def findip(type,pagenum,targeturl,path): # ip类型,页码,目标url,存放ip的
 
 #-----------------------------------------------------多线程抓取ip入口---------------------------------------------------
 def getip(targeturl,path):
-     global session
+     global session,thread
      session = DB_Session()
      truncatefile(path) # 爬取前清空文档
      start = datetime.datetime.now() # 开始时间
@@ -154,6 +161,7 @@ def getip(targeturl,path):
      for e in threads: # 等待所有线程结束
          e.join()
      print('爬取完成')
+     thread = None
      end = datetime.datetime.now() # 结束时间
      diff = gettimediff(start, end)  # 计算耗时
      ips = read(path)  # 读取爬到的ip数量

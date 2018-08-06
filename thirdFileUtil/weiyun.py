@@ -107,16 +107,26 @@ def proxyRquest_normal(url,data,headers):
     flag = True
     while flag:
         try :
+            # begTime = time.time()
             proxy_addr=ipPool.randomGetIp(targeturl)
+            # endTime = time.time()
+            # print("代理IP获取时间:%s"%(str(endTime-begTime)))
             proxies = {
               "http": "http://"+proxy_addr,
               "https": "http://"+proxy_addr,
             }
             flag=False
+            # begTime = time.time()
             result = requests.request('POST' , url, proxies = proxies, data=json.dumps(
-                data), headers=headers, verify=False)
+                data), headers=headers, verify=False ,timeout = 5)
+            # endTime = time.time()
+            # print("代理请求时间:%s"%(str(endTime-begTime)))
         except requests.exceptions.ProxyError as err:
             flag=True
+        except WinError as err:
+            print(err)
+            flag=True
+        
     return result
 
 '''
@@ -491,15 +501,9 @@ def wy_fileUpload_small(pdir_key, ppdir_key, localFilePath):
     jsonData = {
         "json": json.dumps(data)
     }
-    # targeturl = "https://www.weiyun.com"
-    # proxy_addr=ipPool.randomGetIp(targeturl)
-    # proxies = {
-    #   "http": "http://"+proxy_addr,
-    #   "https": "http://"+proxy_addr,
-    # }
-    # result = requests.request('POST', url, proxies = proxies, data=jsonData,
-    #                           files=files, headers=headers, verify=False)
-    result = proxyRquest_file(url,jsonData,files,headers)
+    result = requests.request('POST', url, data=jsonData,
+                              files=files, headers=headers, verify=False)
+    # result = proxyRquest_file(url,jsonData,files,headers)
     successBean = result.json()
     # print(successBean)
     file_id = ""
@@ -568,15 +572,8 @@ def readFileBlob(localFilePath,block_info_list,upload_key,channel,ex,pdir_key):
             "json": json.dumps(data)
         }
         url = "https://upload.weiyun.com/ftnup_v2/weiyun?cmd=247121"
-        # targeturl = "https://www.weiyun.com"
-        # proxy_addr=ipPool.randomGetIp(targeturl)
-        # proxies = {
-        #   "http": "http://"+proxy_addr,
-        #   "https": "http://"+proxy_addr,
-        # }
-        # #proxies = proxies
-        # result = requests.request('POST', url, proxies = proxies,data=jsonData, files=files, headers=headers, verify=False)
-        result = proxyRquest_file(url,jsonData,files,headers)
+        result = requests.request('POST', url,data=jsonData, files=files, headers=headers, verify=False)
+        # result = proxyRquest_file(url,jsonData,files,headers)
         successBean = result.json()
     flie.close()
 '''[summary]
@@ -656,15 +653,8 @@ def wy_fileUpload_big(pdir_key, ppdir_key, localFilePath):
     jsonData = {
         "json": json.dumps(data)
     }
-    # targeturl = "https://www.weiyun.com"
-    # proxy_addr=ipPool.randomGetIp(targeturl)
-    # proxies = {
-    #   "http": "http://"+proxy_addr,
-    #   "https": "http://"+proxy_addr,
-    # }
-    # #,proxies = proxies
-    # result = requests.request('POST', url,proxies = proxies, files=jsonData, headers=headers, verify=False)
-    result = proxyRquest_file(url,None,jsonData,headers)
+    result = requests.request('POST', url, files=jsonData, headers=headers, verify=False)
+    # result = proxyRquest_file(url,None,jsonData,headers)
     successBean = result.json()
     file_exist=successBean["rsp_body"]["RspMsg_body"]["weiyun.PreUploadMsgRsp_body"]['file_exist']
     if(file_exist!=True) :
