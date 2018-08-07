@@ -126,14 +126,16 @@ def proxyRquest_normal(url,data,headers):
     flag = True
     while flag:
         try :
-            if proxy_addr == None :
-                proxy_addr=ipPool.randomGetIp(targeturl)
-            proxies = {
-              "http": "http://"+proxy_addr,
-              "https": "http://"+proxy_addr,
-            }
             flag=False
-            result = requests.request('POST' , url, proxies = proxies, data=json.dumps(
+            # if proxy_addr == None :
+            #     proxy_addr=ipPool.randomGetIp(targeturl)
+            # proxies = {
+            #   "http": "http://"+proxy_addr,
+            #   "https": "http://"+proxy_addr,
+            # }
+            # result = requests.request('POST' , url, proxies = proxies, data=json.dumps(
+            #     data), headers=headers, verify=False,timeout = 5)
+            result = requests.request('POST' , url, data=json.dumps(
                 data), headers=headers, verify=False,timeout = 5)
         except requests.exceptions.ProxyError as err:
             proxy_addr=None

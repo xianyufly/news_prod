@@ -194,7 +194,7 @@ def task():
 			except Exception as err:
 				print(err)
 				break;
-		break;	
+		# break;	
 	session.close();		
 	driver.quit()	
 

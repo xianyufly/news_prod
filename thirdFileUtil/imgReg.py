@@ -10,6 +10,8 @@ import time
 import os
 import urllib
 import shutil
+import sys
+sys.path.append("..")
 from thirdFileUtil import weiyun
 
 # dir_name 文件夹名称 dir_key 微云文件夹key p_dir_key 微云父文件夹key文件
@@ -100,10 +102,42 @@ def regReplaceImgSrc(content):
 	weiyun.initWebDriver()
 	newStr = re.sub(
 	    r"(?P<img><img [^>]*data-src=[\'\"](?P<dataSrc>[^\'\"]+)[^>]* [^>]*src=[\'\"](?P<src>[^\'\"]+)[^>]*?>)", switchSrc, content)
+	newStr = regReplaceBackImg(newStr)
 	#退出WebDriver浏览器
 	weiyun.quitWebDriver()
 	return newStr
 
+def swithchBack(matched):
+	global dir_name, dir_key, p_dir_key
+	img = matched.group("style")
+	src = matched.group("src")
+	dataSrc = src
+	# 下载文件到本地文件夹
+	# 图片下载文件夹
+	workfolder = os.getcwd()
+	aimfolder = workfolder+"/temp/"+str(int(time.time()))
+	if os.path.exists(aimfolder) != True:
+	    # 创建文件夹
+	    os.makedirs(aimfolder)
+	imgName="img_"+str(int(time.time()))
+	#正则处理出图片后缀
+	tempImg=aimfolder+"/"+imgName+"."+regSuffix(dataSrc)
+	urllib.request.urlretrieve(dataSrc, tempImg)
+	file_id, filename=weiyun.wy_fileUpload(dir_key,p_dir_key,tempImg)
+	share_url=weiyun.wy_shareUrl(dir_key,file_id, filename)
+	if share_url != "" :
+		aim_url=weiyun.wy_filePath(share_url,"img")
+	else :
+		aim_url="https://www.17sobt.com?error=100"
+	aim_url=aim_url+"&pdir_key="+dir_key+"&file_id="+file_id+"&account_str="+account_str
+	shutil.rmtree(aimfolder)
+	aimSrc = aim_url
+	img=img.replace(src,aimSrc)
+	return img
+def regReplaceBackImg(content):
+	newStr = re.sub(
+	    r"(?P<style>style=[\'\"][^\'\"]*background-image: url\(&quot;(?P<src>[^\(\)\"\']+)&quot;\)[^\'\"]*?[\'\"])", swithchBack, content)
+	return newStr
 def uploadImgByUrl(imgUrl,dir_name, dir_key, p_dir_key):
 	weiyun.initWebDriver()
 	workfolder = os.getcwd()
@@ -138,3 +172,8 @@ def uploadImgByUrl(imgUrl,dir_name, dir_key, p_dir_key):
 	weiyun.quitWebDriver()
 	aimSrc = aim_url
 	return aimSrc
+
+if __name__ == '__main__':
+    content = '<section class="" powered-by="xiumi.us" style="box-sizing: border-box;"><section style="box-sizing: border-box;"><section class="" powered-by="xiumi.us" style="box-sizing: border-box;"><section style="font-size: 58px;text-align: center;box-sizing: border-box;"><section style="margin: auto;box-sizing: border-box;display: inline-block;vertical-align: bottom;width: 3em;height: 3em;border-radius: 100%;background-position: 100% 0%;background-repeat: no-repeat;background-size: 150.754%;background-image: url(&quot;https://mmbiz.qpic.cn/mmbiz_jpg/6nJRMH45vic3dibMyzDwwjtIe3iaaUVtW2ekQos7qoFQB6EvqnWzHRicm0JIjH8NDWd7ibkj0ARAmIQX9NDpaB1KBLQ/640?wx_fmt=jpeg&quot;);"></section></section></section></section><section style="text-align: center;box-sizing: border-box;"><span style="font-size: 16px;color: rgb(136, 136, 136);max-width: 100%;box-sizing: border-box !important;word-wrap: break-word !important;"></span><br></section><section style="text-align: center;box-sizing: border-box;"><strong><span style="font-size: 16px;color: rgb(136, 136, 136);max-width: 100%;box-sizing: border-box !important;word-wrap: break-word !important;">覃晔</span></strong></section></section>'
+    temp=regReplaceBackImg(content)
+    print()

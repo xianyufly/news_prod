@@ -101,7 +101,7 @@ def randomGetIp(targeturl):
     flag=False
     while flag==False:
         count=session1.query(TIpPool).count()
-        if count<10 :
+        if count==0 :
             if thread==None :
                 thread=threading.Thread(target=getip,args=(targeturl,'ip.txt'))
                 thread.start()
