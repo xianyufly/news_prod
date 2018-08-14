@@ -136,7 +136,7 @@ def proxyRquest_normal(url,data,headers):
             # result = requests.request('POST' , url, proxies = proxies, data=json.dumps(
             #     data), headers=headers, verify=False,timeout = 5)
             result = requests.request('POST' , url, data=json.dumps(
-                data), headers=headers, verify=False,timeout = 5)
+                data), headers=headers, verify=False,timeout = 1)
         except requests.exceptions.ProxyError as err:
             proxy_addr=None
             flag=True

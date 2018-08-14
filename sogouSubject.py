@@ -193,7 +193,8 @@ def task():
 				print("=====================================分割线==================================")
 			except Exception as err:
 				print(err)
-				break;
+				# break;
+			# break;
 		time.sleep(10)
 		# break;	
 	session.close();		
